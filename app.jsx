@@ -12,31 +12,42 @@ import {
   MessageSquare,
   Award,
   ChevronRight,
-  Eye,
   BarChart
 } from 'lucide-react';
 
 const App = () => {
-  // --- Estados Globais ---
-  const [view, setView] = useState('student'); // 'student' ou 'teacher'
+  // --- Estados Globais com Persistência Local ---
+  const [view, setView] = useState('student');
   const [activeTab, setActiveTab] = useState('map');
   const [currentUserGroup, setCurrentUserGroup] = useState('Grupo_01_8A');
   
-  // --- Dados do Jogo (Mock) ---
-  const [groups, setGroups] = useState([
-    { id: 1, name: 'Grupo_01_8A', xp: 450, badges: ['Inovação', 'Escrita Ágil'], progress: 2 },
-    { id: 2, name: 'EcoTech_9B', xp: 520, badges: ['Mestre da Justificativa'], progress: 3 },
-    { id: 3, name: 'Futuro_Sustentável', xp: 300, badges: [], progress: 1 },
-  ]);
+  // Tenta carregar dados salvos ou usa os valores padrão
+  const [groups, setGroups] = useState(() => {
+    const saved = localStorage.getItem('ma_groups');
+    return saved ? JSON.parse(saved) : [
+      { id: 1, name: 'Grupo_01_8A', xp: 450, badges: ['Inovação', 'Escrita Ágil'], progress: 2 },
+      { id: 2, name: 'EcoTech_9B', xp: 520, badges: ['Mestre da Justificativa'], progress: 3 },
+      { id: 3, name: 'Futuro_Sustentável', xp: 300, badges: [], progress: 1 },
+    ];
+  });
 
-  const [phases, setPhases] = useState([
-    { id: 1, title: 'O Despertar', subtitle: 'Aulas 1-3', description: 'Escolha do tema e problema.', status: 'completed', content: 'Defina o tema e valide com o professor no Diário de Bordo.' },
-    { id: 2, title: 'Caminho para a Solução', subtitle: 'Aulas 4-6', description: 'Justificativa e Canvas.', status: 'unlocked', content: 'Preencha o Canvas de Desenvolvimento e escreva por que seu projeto importa.' },
-    { id: 3, title: 'Laboratório de Ideias', subtitle: 'Aulas 7-9', description: 'Metodologia e Referencial.', status: 'locked', content: 'Pesquise fontes e defina como o protótipo será construído.' },
-    { id: 4, title: 'Prototipagem Mão na Massa', subtitle: 'Aulas 10-12', description: 'Desenvolvimento do MVP.', status: 'locked', content: 'Hora de construir! Use Tinkercad, Figma ou materiais físicos.' },
-    { id: 5, title: 'Ajustes e Melhorias', subtitle: 'Aulas 13-15', description: 'Testes e Resultados.', status: 'locked', content: 'Teste seu protótipo e anote o que precisa melhorar.' },
-    { id: 6, title: 'Compartilhamento', subtitle: 'Aulas 16-18', description: 'Relatório e Mostra Inovapoio.', status: 'locked', content: 'Finalize o relatório e prepare o seu Pitch de 3 minutos.' },
-  ]);
+  const [phases, setPhases] = useState(() => {
+    const saved = localStorage.getItem('ma_phases');
+    return saved ? JSON.parse(saved) : [
+      { id: 1, title: 'O Despertar', subtitle: 'Aulas 1-3', description: 'Escolha do tema e problema.', status: 'completed', content: 'Defina o tema e valide com o professor no Diário de Bordo.' },
+      { id: 2, title: 'Caminho para a Solução', subtitle: 'Aulas 4-6', description: 'Justificativa e Canvas.', status: 'unlocked', content: 'Preencha o Canvas de Desenvolvimento e escreva por que seu projeto importa.' },
+      { id: 3, title: 'Laboratório de Ideias', subtitle: 'Aulas 7-9', description: 'Metodologia e Referencial.', status: 'locked', content: 'Pesquise fontes e defina como o protótipo será construído.' },
+      { id: 4, title: 'Prototipagem Mão na Massa', subtitle: 'Aulas 10-12', description: 'Desenvolvimento do MVP.', status: 'locked', content: 'Hora de construir! Use Tinkercad, Figma ou materiais físicos.' },
+      { id: 5, title: 'Ajustes e Melhorias', subtitle: 'Aulas 13-15', description: 'Testes e Resultados.', status: 'locked', content: 'Teste seu protótipo e anote o que precisa melhorar.' },
+      { id: 6, title: 'Compartilhamento', subtitle: 'Aulas 16-18', description: 'Relatório e Mostra Inovapoio.', status: 'locked', content: 'Finalize o relatório e prepare o seu Pitch de 3 minutos.' },
+    ];
+  });
+
+  // Salva os dados sempre que houver mudanças
+  useEffect(() => {
+    localStorage.setItem('ma_groups', JSON.stringify(groups));
+    localStorage.setItem('ma_phases', JSON.stringify(phases));
+  }, [groups, phases]);
 
   const badgesLib = [
     { id: 'Inovação', icon: '🚀', desc: 'Ideia fora da caixa' },
@@ -59,6 +70,11 @@ const App = () => {
       }
       return p;
     }));
+  };
+
+  const approveSubmission = (groupId, xpReward) => {
+    setGroups(groups.map(g => g.id === groupId ? { ...g, xp: g.xp + xpReward } : g));
+    // Aqui poderíamos mudar o status da fase para 'completed' no grupo específico
   };
 
   // --- Componentes de Interface ---
@@ -188,7 +204,6 @@ const App = () => {
             <tr>
               <th className="p-4 font-bold text-slate-600 text-sm">Posição</th>
               <th className="p-4 font-bold text-slate-600 text-sm">Grupo</th>
-              <th className="p-4 font-bold text-slate-600 text-sm">Etapa Atual</th>
               <th className="p-4 font-bold text-slate-600 text-sm text-right">XP Total</th>
             </tr>
           </thead>
@@ -206,7 +221,6 @@ const App = () => {
                     ))}
                   </div>
                 </td>
-                <td className="p-4 text-sm text-slate-600">Fase {group.progress}</td>
                 <td className="p-4 text-right font-mono font-bold text-blue-600">{group.xp} XP</td>
               </tr>
             ))}
@@ -220,11 +234,12 @@ const App = () => {
     <div className="p-8 space-y-8">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-slate-800">Painel de Controle</h2>
-        <div className="flex gap-2">
-          <button className="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2">
-            <Plus size={16} /> Criar Novo Grupo
-          </button>
-        </div>
+        <button 
+          onClick={() => { localStorage.clear(); window.location.reload(); }}
+          className="text-xs text-red-500 underline"
+        >
+          Resetar Todos os Dados
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -264,7 +279,10 @@ const App = () => {
               </div>
               <p className="text-xs text-orange-700 mb-3 italic">"Enviamos a justificativa no Moodle e preenchemos o Canvas físico."</p>
               <div className="flex gap-2">
-                <button className="flex-1 bg-white text-green-600 border border-green-200 py-1.5 rounded-lg text-xs font-bold hover:bg-green-50 transition">
+                <button 
+                  onClick={() => approveSubmission(1, 50)}
+                  className="flex-1 bg-white text-green-600 border border-green-200 py-1.5 rounded-lg text-xs font-bold hover:bg-green-50 transition"
+                >
                   Aprovar +50 XP
                 </button>
                 <button className="flex-1 bg-white text-slate-500 border border-slate-200 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-50 transition">
@@ -272,35 +290,6 @@ const App = () => {
                 </button>
               </div>
             </div>
-            
-            <p className="text-center text-xs text-slate-400">Nenhuma outra entrega pendente.</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-        <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-          <Layout className="text-purple-500" size={20} /> Links e Desafios Semanais
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 border border-slate-100 rounded-xl hover:border-blue-200 transition cursor-pointer">
-            <div className="bg-blue-50 w-8 h-8 rounded-lg flex items-center justify-center text-blue-600 mb-3">
-              <ExternalLink size={16} />
-            </div>
-            <p className="font-bold text-sm text-slate-800">Moodle Institucional</p>
-            <p className="text-xs text-slate-500">Repositório de arquivos</p>
-          </div>
-          <div className="p-4 border border-slate-100 rounded-xl hover:border-purple-200 transition cursor-pointer">
-            <div className="bg-purple-50 w-8 h-8 rounded-lg flex items-center justify-center text-purple-600 mb-3">
-              <MessageSquare size={16} />
-            </div>
-            <p className="font-bold text-sm text-slate-800">Fórum de Dúvidas</p>
-            <p className="text-xs text-slate-500">Suporte técnico</p>
-          </div>
-          <div className="p-4 border border-dashed border-slate-200 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-50 transition cursor-pointer">
-            <span className="text-xs font-bold flex items-center gap-2">
-              <Plus size={14} /> Adicionar Link
-            </span>
           </div>
         </div>
       </div>
@@ -325,9 +314,6 @@ const App = () => {
               </div>
             </div>
           ))}
-          <div className="w-10 h-10 flex items-center justify-center rounded-xl border-2 border-dashed border-slate-100 text-slate-300">
-            ?
-          </div>
         </div>
       </div>
 
@@ -349,16 +335,12 @@ const App = () => {
   return (
     <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
       <Sidebar />
-      
       <main className="flex-1 pb-24">
         {activeTab === 'map' && <StudentMap />}
         {activeTab === 'ranking' && <Ranking />}
         {activeTab === 'dashboard' && view === 'teacher' && <TeacherDashboard />}
-        
         {view === 'student' && <StudentResources />}
       </main>
-
-      {/* Botão de Floating Feedback (Apenas Visual) */}
       <div className="fixed bottom-6 left-[280px] bg-white border border-slate-200 px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer">
         <MessageSquare size={14} /> Falar com o Professor
       </div>
